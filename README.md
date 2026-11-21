@@ -134,3 +134,6 @@ A result save replaces each included row and leaves students out of the payload 
 - **Result** — one student, one examination, marks obtained, and optional remarks. The student and examination pair is unique.
 
 Marks are rounded to two decimal places and must fall between zero and that examination's total.
+
+
+### Developed by Md Shah Jalal (shah.jalal.ju.bd@gmail.com)
