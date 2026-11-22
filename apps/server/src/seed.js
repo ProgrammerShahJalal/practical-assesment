@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -42,16 +44,27 @@ const PHYSICS_MARKS = [
   ["R-1001", 18],
 ];
 
+function adminCredentials() {
+  return {
+    username: String(process.env.ADMIN_USERNAME || "admin").trim().toLowerCase(),
+    password: String(process.env.ADMIN_PASSWORD || "admin123"),
+  };
+}
+
+function studentPassword() {
+  return String(process.env.SEED_STUDENT_PASSWORD || "student123");
+}
+
 async function ensureAdmin() {
-  const username = String(process.env.ADMIN_USERNAME || "admin").trim().toLowerCase();
-  const password = String(process.env.ADMIN_PASSWORD || "admin123");
+  const { username, password } = adminCredentials();
   const existing = await Admin.findOne({ username });
   if (existing) {
     console.log(`Admin "${username}" already exists.`);
-    return;
+    return { username, password: null, created: false };
   }
   await Admin.create({ username, passwordHash: await bcrypt.hash(password, 10) });
   console.log(`Created admin "${username}".`);
+  return { username, password, created: true };
 }
 
 // Older databases already contain the sample cohort from before the student
@@ -63,14 +76,15 @@ async function ensureSamplePasswords() {
     rollNumber: { $in: rolls },
     $or: [{ passwordHash: { $exists: false } }, { passwordHash: null }, { passwordHash: "" }],
   }).select("_id");
-  if (!missing.length) return;
+  if (!missing.length) return 0;
 
-  const passwordHash = await bcrypt.hash(String(process.env.SEED_STUDENT_PASSWORD || "student123"), 10);
+  const passwordHash = await bcrypt.hash(studentPassword(), 10);
   await Student.updateMany(
     { _id: { $in: missing.map((student) => student._id) } },
     { $set: { passwordHash } },
   );
   console.log(`Set a dev password on ${missing.length} existing sample student(s).`);
+  return missing.length;
 }
 
 async function seedSamples() {
@@ -80,10 +94,10 @@ async function seedSamples() {
   ]);
   if (studentCount > 0 || examinationCount > 0) {
     console.log("Sample students or examinations already exist, so sample results were left untouched.");
-    return;
+    return { studentsAdded: 0, examinationsAdded: 0, resultsAdded: 0 };
   }
 
-  const studentPasswordHash = await bcrypt.hash(String(process.env.SEED_STUDENT_PASSWORD || "student123"), 10);
+  const studentPasswordHash = await bcrypt.hash(studentPassword(), 10);
   const students = await Student.insertMany(
     SAMPLE_STUDENTS.map(([name, rollNumber, email]) => ({
       name,
@@ -118,20 +132,66 @@ async function seedSamples() {
       marksObtained,
     }));
 
-  await Result.insertMany([...rowsFor(mathematics, MATH_MARKS), ...rowsFor(physics, PHYSICS_MARKS)]);
+  const rows = [...rowsFor(mathematics, MATH_MARKS), ...rowsFor(physics, PHYSICS_MARKS)];
+  await Result.insertMany(rows);
   console.log(
-    `Seeded 8 students, 2 examinations, and both result sets. Student password: "${process.env.SEED_STUDENT_PASSWORD || "student123"}" (dev placeholder).`,
+    `Seeded ${students.length} students, 2 examinations, and both result sets. Student password: "${studentPassword()}" (dev placeholder).`,
   );
+  return {
+    studentsAdded: students.length,
+    examinationsAdded: 2,
+    resultsAdded: rows.length,
+  };
 }
 
-try {
-  await connectDb();
-  await ensureAdmin();
-  await ensureSamplePasswords();
-  await seedSamples();
-} catch (error) {
-  console.error(error.message);
-  process.exitCode = 1;
-} finally {
-  await mongoose.disconnect();
+async function performSeed() {
+  if (mongoose.connection.readyState !== 1) await connectDb();
+
+  const admin = await ensureAdmin();
+  const samplePasswordsAdded = await ensureSamplePasswords();
+  const samples = await seedSamples();
+  const studentsReady = samples.studentsAdded > 0 || samplePasswordsAdded > 0;
+
+  // Only hand back passwords we actually set. If an account already exists we
+  // never claim to know its password.
+  return {
+    adminUsername: admin.username,
+    adminPassword: admin.created ? admin.password : null,
+    adminCreated: admin.created,
+    studentUsername: SAMPLE_STUDENTS[0][1],
+    studentPassword: studentsReady ? studentPassword() : null,
+    samplePasswordsAdded,
+    ...samples,
+  };
+}
+
+// Shared by the CLI script and the one-click setup endpoint. Reusing one
+// promise keeps a double-click (or two visitors) from inserting the same
+// cohort twice.
+let running = null;
+export function runSeed() {
+  if (!running) {
+    running = performSeed().finally(() => {
+      running = null;
+    });
+  }
+  return running;
+}
+
+const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  try {
+    const result = await runSeed();
+    console.log(
+      `Setup complete. Admin: ${result.adminUsername}${result.adminPassword ? ` / ${result.adminPassword}` : " (password unchanged)"}`,
+    );
+    console.log(
+      `Students added: ${result.studentsAdded}, examinations added: ${result.examinationsAdded}, results added: ${result.resultsAdded}.`,
+    );
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  } finally {
+    await mongoose.disconnect();
+  }
 }

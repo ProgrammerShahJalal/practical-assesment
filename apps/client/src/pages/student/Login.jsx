@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useStudentAuth } from "../../auth";
 import { Banner } from "../../components/Banner";
+import { QuickSetup } from "../../components/QuickSetup";
 
 const DEMO = import.meta.env.DEV;
 
@@ -29,6 +30,13 @@ export function LoginPage() {
       setError(err.message || "Invalid registration number or password.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function onQuickSetup(result) {
+    if (result.studentPassword) {
+      setRegistrationNumber(result.studentUsername);
+      setPassword(result.studentPassword);
     }
   }
 
@@ -74,6 +82,7 @@ export function LoginPage() {
         <button type="submit" className="primary" disabled={submitting}>
           {submitting ? "Signing in…" : "View my results"}
         </button>
+        <QuickSetup onReady={onQuickSetup} />
         <p className="login-switch">
           Managing records? <Link to="/login">Admin Login</Link>
         </p>

@@ -56,6 +56,16 @@ Midterm Mathematics is out of 100. Expected ranks:
 
 Final Physics is out of 50, so its percentages are not the raw marks. Hasan Ali leads that paper with 49/50 (98%, A+). Grace Mendez and Farhan Ahmed share rank 2 with 46. Ayesha Rahman is last on that paper with 18/50 (36%, F). The two boards are supposed to disagree.
 
+## One-click setup on the login screen
+
+A fresh deployment can start with an empty database, so there is no admin account to sign in with. Both login pages now have a **First time here?** panel with a **Set up the app in one click** button. It calls `POST /api/setup/quick-start` (no login required) and:
+
+- creates the admin account from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in the server environment (defaults `admin` / `admin123`) if it does not exist;
+- loads the example students, examinations and results when there are no students or examinations yet;
+- shows the login details on screen and fills in the matching login form.
+
+It never resets an existing password and never replaces existing students, examinations or results, so clicking it twice is harmless. This is a temporary helper for testing a live site with no data. To turn it off once real data is in place, set `DISABLE_QUICK_SETUP=true` in `apps/server/.env` and restart the API.
+
 ## Local setup
 
 Requirements: Node.js 20 or newer, and MongoDB listening on the URI in `apps/server/.env`. If you do not already have MongoDB, start the included database with Docker:
@@ -97,13 +107,14 @@ Change `JWT_SECRET` and `STUDENT_JWT_SECRET` in `apps/server/.env` before using 
 
 ## API
 
-Every response is `{ "data": ... }` or `{ "error": "..." }`. Except for health and the two login endpoints, routes require `Authorization: Bearer <token>`. Admin routes accept only an admin token; student routes accept only a student token.
+Every response is `{ "data": ... }` or `{ "error": "..." }`. Except for health, one-click setup, and the two login endpoints, routes require `Authorization: Bearer <token>`. Admin routes accept only an admin token; student routes accept only a student token.
 
 ### Admin API (unchanged)
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Process check |
+| POST | `/api/setup/quick-start` | One-click setup: create the admin login and load the example cohort when the database is empty (public, temporary) |
 | POST | `/api/auth/login` | Exchange username and password for an admin token |
 | GET | `/api/auth/me` | Current administrator |
 | GET | `/api/dashboard` | Counts and the top of recent examinations |

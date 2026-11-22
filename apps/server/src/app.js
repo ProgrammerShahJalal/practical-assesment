@@ -8,6 +8,7 @@ import { examinationsRouter } from "./routes/examinations.js";
 import { leaderboardRouter } from "./routes/leaderboard.js";
 import { studentRouter } from "./routes/student.js";
 import { studentsRouter } from "./routes/students.js";
+import { setupRouter } from "./routes/setup.js";
 
 export function createApp() {
   const app = express();
@@ -26,6 +27,7 @@ export function createApp() {
   app.get("/api/health", (_req, res) => {
     res.json({ data: { ok: true } });
   });
+  app.use("/api/setup", setupRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/students", studentsRouter);

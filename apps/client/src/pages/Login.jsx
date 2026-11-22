@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Banner } from "../components/Banner";
+import { QuickSetup } from "../components/QuickSetup";
 
 const DEMO = import.meta.env.DEV;
 
@@ -22,6 +23,13 @@ export function LoginPage() {
       setError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function onQuickSetup(result) {
+    if (result.adminPassword) {
+      setUsername(result.adminUsername);
+      setPassword(result.adminPassword);
     }
   }
 
@@ -61,6 +69,7 @@ export function LoginPage() {
         <button type="submit" className="primary" disabled={submitting}>
           {submitting ? "Signing in…" : "Enter the ledger"}
         </button>
+        <QuickSetup onReady={onQuickSetup} />
         <p className="login-switch">
           Signing in as a student? <Link to="/student/login">Student Login</Link>
         </p>
