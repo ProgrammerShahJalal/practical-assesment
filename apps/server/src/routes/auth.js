@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
-import jwt from "jsonwebtoken";
 import { fail, send } from "../lib/http.js";
+import { signAdminToken } from "../lib/tokens.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { Admin } from "../models/Admin.js";
@@ -19,9 +19,7 @@ authRouter.post(
     const matches = admin ? await bcrypt.compare(password, admin.passwordHash) : false;
     if (!admin || !matches) return fail(res, 401, "Invalid username or password.");
 
-    const token = jwt.sign({ sub: String(admin._id), username: admin.username }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "12h",
-    });
+    const token = signAdminToken(admin);
 
     return send(res, { token, admin: { id: admin._id, username: admin.username } });
   }),

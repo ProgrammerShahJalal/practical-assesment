@@ -1,5 +1,6 @@
+import bcrypt from "bcryptjs";
 import { Router } from "express";
-import { escapeRegex, parseStudent } from "../lib/validate.js";
+import { escapeRegex, parsePassword, parseStudent } from "../lib/validate.js";
 import { fail, send } from "../lib/http.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireAdmin } from "../middleware/auth.js";
@@ -32,7 +33,12 @@ studentsRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = parseStudent(req.body);
     if (parsed.error) return fail(res, 400, parsed.error);
-    const student = await Student.create(parsed.value);
+    const password = parsePassword(req.body?.password);
+    if (password.error) return fail(res, 400, password.error);
+
+    const fields = { ...parsed.value };
+    if (password.value) fields.passwordHash = await bcrypt.hash(password.value, 10);
+    const student = await Student.create(fields);
     return send(res, student, 201);
   }),
 );
@@ -42,7 +48,12 @@ studentsRouter.put(
   asyncHandler(async (req, res) => {
     const parsed = parseStudent(req.body);
     if (parsed.error) return fail(res, 400, parsed.error);
-    const student = await Student.findByIdAndUpdate(req.params.id, parsed.value, {
+    const password = parsePassword(req.body?.password);
+    if (password.error) return fail(res, 400, password.error);
+
+    const fields = { ...parsed.value };
+    if (password.value) fields.passwordHash = await bcrypt.hash(password.value, 10);
+    const student = await Student.findByIdAndUpdate(req.params.id, fields, {
       new: true,
       runValidators: true,
     });

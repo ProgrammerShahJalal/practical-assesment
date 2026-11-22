@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { roundTo } from "./ranking.js";
 
 function requiredString(value, field, max) {
@@ -107,4 +108,32 @@ export function parseExamination(body = {}) {
 
 export function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Blank means "leave the current password alone" for the admin student form.
+export function parsePassword(value) {
+  if (value !== undefined && value !== null && typeof value !== "string") {
+    return { error: "Password must be text." };
+  }
+  const password = value === undefined || value === null ? "" : value;
+  if (!password) return { value: "" };
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password.length > 128) return { error: "Password must be at most 128 characters." };
+  return { value: password };
+}
+
+export function parseObjectId(value, label = "id") {
+  const id = String(value ?? "");
+  if (!mongoose.isValidObjectId(id)) return { error: `Invalid ${label}.` };
+  return { value: id };
+}
+
+export function parsePagination(query = {}) {
+  const page = Number.parseInt(String(query.page ?? "1"), 10);
+  const limit = Number.parseInt(String(query.limit ?? "10"), 10);
+  if (!Number.isInteger(page) || page < 1) return { error: "Page must be a positive number." };
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+    return { error: "Limit must be between 1 and 50." };
+  }
+  return { value: { page, limit } };
 }
