@@ -54,6 +54,25 @@ async function ensureAdmin() {
   console.log(`Created admin "${username}".`);
 }
 
+// Older databases already contain the sample cohort from before the student
+// panel existed. Give those students a dev password too, but never overwrite
+// a password that was already set by an admin or by the student.
+async function ensureSamplePasswords() {
+  const rolls = SAMPLE_STUDENTS.map(([, rollNumber]) => rollNumber);
+  const missing = await Student.find({
+    rollNumber: { $in: rolls },
+    $or: [{ passwordHash: { $exists: false } }, { passwordHash: null }, { passwordHash: "" }],
+  }).select("_id");
+  if (!missing.length) return;
+
+  const passwordHash = await bcrypt.hash(String(process.env.SEED_STUDENT_PASSWORD || "student123"), 10);
+  await Student.updateMany(
+    { _id: { $in: missing.map((student) => student._id) } },
+    { $set: { passwordHash } },
+  );
+  console.log(`Set a dev password on ${missing.length} existing sample student(s).`);
+}
+
 async function seedSamples() {
   const [studentCount, examinationCount] = await Promise.all([
     Student.countDocuments(),
@@ -108,6 +127,7 @@ async function seedSamples() {
 try {
   await connectDb();
   await ensureAdmin();
+  await ensureSamplePasswords();
   await seedSamples();
 } catch (error) {
   console.error(error.message);

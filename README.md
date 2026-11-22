@@ -39,7 +39,7 @@ Ranks are computed from live data on every request, so creating, updating, or de
 
 ## Seeded example
 
-`npm run seed` creates the admin account and, when the database has no students or examinations, loads a Class 10 Section A cohort. Every seeded student gets the same development password (`student123` by default) so the student panel can be tried immediately. This is a placeholder, not a secret — change `SEED_STUDENT_PASSWORD` before seeding a non-demo database.
+`npm run seed` creates the admin account and, when the database has no students or examinations, loads a Class 10 Section A cohort. Every seeded student gets the same development password (`student123` by default) so the student panel can be tried immediately. Running the seed again also backfills that password for the sample roll numbers `R-1001`–`R-1008` that still have none; it never overwrites a password that was already set. This is a placeholder, not a secret — change `SEED_STUDENT_PASSWORD` before seeding a non-demo database. Students outside the sample cohort need a password set through the admin panel.
 
 Midterm Mathematics is out of 100. Expected ranks:
 
@@ -182,7 +182,7 @@ Students cannot create, update, or delete students, examinations, or results. Th
 ### Testing the student panel locally
 
 ```bash
-npm run seed   # if you have not seeded yet
+npm run seed   # also backfills dev passwords for existing sample students
 npm run dev
 ```
 
