@@ -91,7 +91,11 @@ npm run dev
 
 In local development both login forms are pre-filled with these seeded values, so one click on the login button signs in. Production builds start with empty fields and no demo credentials in the bundle.
 
-`npm run dev` starts the API and the Vite client together. The client calls relative `/api` paths; Vite proxies them to the API in development and Nginx proxies them in production. There is no hardcoded API host in the React code.
+`npm run dev` starts the API and the Vite client together. The client calls relative `/api` paths, so there is no hardcoded API host in the React code. Vite proxies them to the API in development.
+
+### Vercel deployment
+
+The client and the API are separate Vercel projects. `apps/client/vercel.json` proxies `/api/:path*` to the server project before the catch-all SPA rewrite, so a POST such as `/api/auth/login` or `/api/setup/quick-start` reaches Express instead of being served as `index.html` (which returns 405). If the server project URL changes, update that destination and redeploy the client. Keep `CLIENT_ORIGIN` in the server project's environment variables set to the client URL.
 
 Change `JWT_SECRET` and `STUDENT_JWT_SECRET` in `apps/server/.env` before using this anywhere other than a local demo. Use two different long random strings. The seed does not reset an existing admin password.
 
