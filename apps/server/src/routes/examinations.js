@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Router } from "express";
 import { fail, send } from "../lib/http.js";
+import { resultCounts } from "../lib/results.js";
 import { parseExamination, parseMarks } from "../lib/validate.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireAdmin } from "../middleware/auth.js";
@@ -11,11 +12,6 @@ import { Student } from "../models/Student.js";
 export const examinationsRouter = Router();
 
 examinationsRouter.use(requireAdmin);
-
-async function resultCounts() {
-  const counts = await Result.aggregate([{ $group: { _id: "$examination", count: { $sum: 1 } } }]);
-  return new Map(counts.map((row) => [String(row._id), row.count]));
-}
 
 examinationsRouter.get(
   "/",

@@ -6,11 +6,15 @@ import { authRouter } from "./routes/auth.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { examinationsRouter } from "./routes/examinations.js";
 import { leaderboardRouter } from "./routes/leaderboard.js";
+import { studentRouter } from "./routes/student.js";
 import { studentsRouter } from "./routes/students.js";
 
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
+  // One trusted reverse proxy hop (Nginx on the VPS) so rate limiting sees
+  // the client address instead of the proxy address.
+  app.set("trust proxy", Number(process.env.TRUST_PROXY || 1));
   app.use(helmet());
   app.use(
     cors({
@@ -27,6 +31,7 @@ export function createApp() {
   app.use("/api/students", studentsRouter);
   app.use("/api/examinations", examinationsRouter);
   app.use("/api/leaderboard", leaderboardRouter);
+  app.use("/api/student", studentRouter);
 
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });
