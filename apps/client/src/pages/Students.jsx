@@ -4,7 +4,7 @@ import { Banner } from "../components/Banner";
 import { Layout } from "../components/Layout";
 import { Modal } from "../components/Modal";
 
-const EMPTY = { name: "", rollNumber: "", email: "", className: "", section: "" };
+const EMPTY = { name: "", rollNumber: "", email: "", className: "", section: "", password: "" };
 
 export function StudentsPage() {
   const [query, setQuery] = useState("");
@@ -105,7 +105,7 @@ export function StudentsPage() {
                   <td>{student.section || "—"}</td>
                   <td>{student.email || "—"}</td>
                   <td className="row-actions">
-                    <button type="button" onClick={() => setDraft({ ...student })}>
+                    <button type="button" onClick={() => setDraft({ ...student, password: "" })}>
                       Edit
                     </button>
                     <button type="button" className="danger" onClick={() => remove(student)}>
@@ -149,6 +149,18 @@ export function StudentsPage() {
             <label>
               Email
               <input type="email" value={draft.email} onChange={(event) => update("email", event.target.value)} />
+            </label>
+            <label>
+              Student login password (optional)
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder={draft._id ? "Leave blank to keep current password" : "At least 8 characters"}
+                value={draft.password || ""}
+                onChange={(event) => update("password", event.target.value)}
+                minLength={8}
+              />
+              <span className="hint">Students sign in with this password and their roll number.</span>
             </label>
             <div className="form-actions">
               <button type="button" onClick={() => setDraft(null)}>

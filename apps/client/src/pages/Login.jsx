@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Banner } from "../components/Banner";
 
@@ -59,6 +60,9 @@ export function LoginPage() {
           {submitting ? "Signing in…" : "Enter the ledger"}
         </button>
         <p className="hint">Seeded local account: admin / admin123</p>
+        <p className="login-switch">
+          Signing in as a student? <Link to="/student/login">Student Login</Link>
+        </p>
       </form>
     </main>
   );
