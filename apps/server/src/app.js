@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -9,6 +12,8 @@ import { leaderboardRouter } from "./routes/leaderboard.js";
 import { studentRouter } from "./routes/student.js";
 import { studentsRouter } from "./routes/students.js";
 import { setupRouter } from "./routes/setup.js";
+
+const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");
 
 export function createApp() {
   const app = express();
@@ -38,9 +43,18 @@ export function createApp() {
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });
   });
-  app.get("/", (_req, res) => {
-  res.json({ data: { name: "practical-assessment API", ok: true } });
-});
+
+  if (existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientDist, "index.html"));
+    });
+  } else {
+    app.get("/", (_req, res) => {
+      res.json({ data: { name: "practical-assessment API", ok: true } });
+    });
+  }
+
   app.use(errorHandler);
   return app;
 }

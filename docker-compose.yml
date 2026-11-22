@@ -1,10 +1,49 @@
 services:
   mongo:
     image: mongo:7
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - student_results_mongo:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: result-ledger:local
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: mongodb://mongo:27017/student_results
+      JWT_SECRET: ${JWT_SECRET:-replace-this-with-a-long-random-string}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
+      STUDENT_JWT_SECRET: ${STUDENT_JWT_SECRET:-replace-this-with-a-different-long-random-string}
+      STUDENT_JWT_EXPIRES_IN: ${STUDENT_JWT_EXPIRES_IN:-12h}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:4000}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD:-student123}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      DISABLE_QUICK_SETUP: ${DISABLE_QUICK_SETUP:-false}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
 volumes:
   student_results_mongo:

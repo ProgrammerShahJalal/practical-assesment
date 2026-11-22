@@ -64,14 +64,42 @@ A fresh deployment can start with an empty database, so there is no admin accoun
 - loads the example students, examinations and results when there are no students or examinations yet;
 - shows the login details on screen and fills in the matching login form.
 
-It never resets an existing password and never replaces existing students, examinations or results, so clicking it twice is harmless. This is a temporary helper for testing a live site with no data. To turn it off once real data is in place, set `DISABLE_QUICK_SETUP=true` in `apps/server/.env` and restart the API.
+It never resets an existing password and never replaces existing students, examinations or results, so clicking it twice is harmless. This is a temporary helper for testing a live site with no data. To turn it off once real data is in place, set `DISABLE_QUICK_SETUP=true` in the server environment and restart the API.
+
+## Docker
+
+The multi-stage `Dockerfile` builds the Vite client and runs the Express API from a single image. Express also serves `apps/client/dist` with an SPA fallback, so the UI, API and MongoDB all come up with one command.
+
+```bash
+cp .env.example .env   # optional, but set real secrets outside a local demo
+docker compose up --build -d
+```
+
+- App and API: http://localhost:4000
+- MongoDB: `localhost:27017` (published for local tooling)
+- First run: use **Set up the app in one click** on the login screen, or seed from the container:
+
+```bash
+docker compose exec app npm run seed
+```
+
+Other useful commands:
+
+```bash
+docker compose logs -f app     # follow API logs
+docker compose restart app     # restart after changing .env
+docker compose down            # stop containers, keep MongoDB data
+docker compose down -v         # stop containers and delete MongoDB data
+```
+
+Compose reads `.env` in the project root for secrets and overrides `MONGODB_URI` to use the `mongo` service. The defaults in `.env.example` are demo values — change `JWT_SECRET` and `STUDENT_JWT_SECRET` before exposing the app.
 
 ## Local setup
 
-Requirements: Node.js 20 or newer, and MongoDB listening on the URI in `apps/server/.env`. If you do not already have MongoDB, start the included database with Docker:
+Requirements: Node.js 20 or newer, and MongoDB listening on the URI in `apps/server/.env`. If you do not already have MongoDB, start just the database container with Docker:
 
 ```bash
-docker compose up -d
+docker compose up -d mongo
 ```
 
 Then:
@@ -229,7 +257,7 @@ If `STUDENT_JWT_SECRET` is omitted, a key is derived from `JWT_SECRET` with doma
 
 ## Deployment notes
 
-- Build with `npm run build -w client` and serve `apps/client/dist` through Nginx. Keep the existing SPA fallback: `try_files $uri $uri/ /index.html;` so direct links and refreshes on `/student/*` resolve to the React app. Proxy `/api` to the Node process and pass `X-Forwarded-For` for rate limiting.
+- The Docker image builds the client and lets Express serve `apps/client/dist` with an SPA fallback, so no separate Nginx container is required. If you serve the bundle through Nginx instead, keep the existing `try_files $uri $uri/ /index.html;` fallback so direct links and refreshes on `/student/*` resolve to the React app, and pass `X-Forwarded-For` for rate limiting.
 - The process manager command does not change (`npm start` in `apps/server`). Add the new environment variables to the server environment and restart once.
 - No Nginx or PM2 config change is required if the existing setup already proxies `/api` and falls back to `index.html` for client routes; the new routes are ordinary client-side paths.
 
