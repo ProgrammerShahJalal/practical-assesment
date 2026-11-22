@@ -79,6 +79,8 @@ npm run dev
 - Seeded admin: `admin` / `admin123`
 - Seeded student: `R-1001` / `student123`
 
+In local development both login forms are pre-filled with these seeded values, so one click on the login button signs in. Production builds start with empty fields and no demo credentials in the bundle.
+
 `npm run dev` starts the API and the Vite client together. The client calls relative `/api` paths; Vite proxies them to the API in development and Nginx proxies them in production. There is no hardcoded API host in the React code.
 
 Change `JWT_SECRET` and `STUDENT_JWT_SECRET` in `apps/server/.env` before using this anywhere other than a local demo. Use two different long random strings. The seed does not reset an existing admin password.

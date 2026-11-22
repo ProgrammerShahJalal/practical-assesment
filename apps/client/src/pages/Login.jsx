@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Banner } from "../components/Banner";
 
+const DEMO = import.meta.env.DEV;
+
 export function LoginPage() {
   const { login } = useAuth();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(DEMO ? "admin" : "");
+  const [password, setPassword] = useState(DEMO ? "admin123" : "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -59,7 +61,6 @@ export function LoginPage() {
         <button type="submit" className="primary" disabled={submitting}>
           {submitting ? "Signing in…" : "Enter the ledger"}
         </button>
-        <p className="hint">Seeded local account: admin / admin123</p>
         <p className="login-switch">
           Signing in as a student? <Link to="/student/login">Student Login</Link>
         </p>

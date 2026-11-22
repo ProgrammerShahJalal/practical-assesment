@@ -3,11 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import { useStudentAuth } from "../../auth";
 import { Banner } from "../../components/Banner";
 
+const DEMO = import.meta.env.DEV;
+
 export function LoginPage() {
   const { login } = useStudentAuth();
   const location = useLocation();
-  const [registrationNumber, setRegistrationNumber] = useState("");
-  const [password, setPassword] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState(DEMO ? "R-1001" : "");
+  const [password, setPassword] = useState(DEMO ? "student123" : "");
   const [notice, setNotice] = useState(location.state?.message || "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +74,6 @@ export function LoginPage() {
         <button type="submit" className="primary" disabled={submitting}>
           {submitting ? "Signing in…" : "View my results"}
         </button>
-        <p className="hint">Local seed account: R-1001 / student123 (development placeholder).</p>
         <p className="login-switch">
           Managing records? <Link to="/login">Admin Login</Link>
         </p>
