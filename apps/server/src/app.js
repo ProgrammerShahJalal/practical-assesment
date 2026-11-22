@@ -36,6 +36,9 @@ export function createApp() {
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });
   });
+  app.get("/", (_req, res) => {
+  res.json({ data: { name: "practical-assessment API", ok: true } });
+});
   app.use(errorHandler);
   return app;
 }
