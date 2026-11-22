@@ -64,6 +64,7 @@ async function seedSamples() {
     return;
   }
 
+  const studentPasswordHash = await bcrypt.hash(String(process.env.SEED_STUDENT_PASSWORD || "student123"), 10);
   const students = await Student.insertMany(
     SAMPLE_STUDENTS.map(([name, rollNumber, email]) => ({
       name,
@@ -71,6 +72,7 @@ async function seedSamples() {
       email,
       className: "10",
       section: "A",
+      passwordHash: studentPasswordHash,
     })),
   );
   const byRoll = new Map(students.map((student) => [student.rollNumber, student]));
@@ -98,7 +100,9 @@ async function seedSamples() {
     }));
 
   await Result.insertMany([...rowsFor(mathematics, MATH_MARKS), ...rowsFor(physics, PHYSICS_MARKS)]);
-  console.log("Seeded 8 students, 2 examinations, and both result sets.");
+  console.log(
+    `Seeded 8 students, 2 examinations, and both result sets. Student password: "${process.env.SEED_STUDENT_PASSWORD || "student123"}" (dev placeholder).`,
+  );
 }
 
 try {
